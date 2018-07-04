@@ -1,0 +1,16 @@
+# Warbo's Laminar Configuration #
+
+Laminar is a simple continuous integration server. Laminar jobs are just scripts
+which live in a particular directory, which this repository provides.
+
+We don't point Laminar directly at this git repository, since the scripts might
+need a variety of dependencies, etc. which might even conflict (e.g. if jobs
+need different versions of GHC). Instead we define the jobs directory as a Nix
+package, which lets us manage each script's dependencies independently.
+
+## Contents ##
+
+The `default.nix` file defines the job directory package. Build it using e.g.
+`nix-build`.
+
+The `install` script builds the job directory and points Laminar at the result.
