@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+# Create cfg for Laminar
+D=$(nix-build --show-trace --no-out-link)
+
+# We have Laminar configured to look for cfg at ~/System/Laminar. We atomically
+# replace this symlink to point to "$D" by creating a symlink with the correct
+# name in some other directory (/tmp) then moving it into ~/System. If we just
+# did 'ln -s "$D" ~/System/Laminar' then we'd get ~/System/Laminar/Laminar
+rm -f /tmp/Laminar
+ln -s "$D" /tmp/Laminar
+mv -v /tmp/Laminar ~/System/
