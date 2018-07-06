@@ -3,10 +3,25 @@ set -e
 # Create cfg for Laminar
 D=$(nix-build --show-trace --no-out-link)
 
-# We have Laminar configured to look for cfg at ~/System/Laminar. We atomically
-# replace this symlink to point to "$D" by creating a symlink with the correct
-# name in some other directory (/tmp) then moving it into ~/System. If we just
-# did 'ln -s "$D" ~/System/Laminar' then we'd get ~/System/Laminar/Laminar
-rm -f /tmp/Laminar
-ln -s "$D" /tmp/Laminar
-mv -v /tmp/Laminar ~/System/
+# Desktop and laptop have the same hostname... Use the location of nixos config
+# to distinguish between them
+if readlink -f /etc/nixos/configuration.nix | grep 'desktop-scripts' > /dev/null
+then
+    echo "We're on desktop" 1>&2
+    LAMINAR_CFG=/var/lib/laminar/cfg
+else
+    echo "We're on laptop" 1>&2
+    LAMINAR_CFG=/home/chris/System/Laminar
+fi
+echo "Laminar cfg location: $LAMINAR_CFG" 1>&2
+
+# Atomically replace the cfg symlink to point to "$D" by creating a symlink with
+# the same name in /tmp then moving it into the parent directory. This avoids
+# nesting that we'd get from 'ln -s "$D" "$LAMINAR_CFG"' (e.g. ending up with
+# /var/lib/laminar/cfg/cfg).
+NAME=$(basename "$LAMINAR_CFG")
+ DIR=$(dirname  "$LAMINAR_CFG")
+
+rm -f /tmp/"$NAME"
+ln -s "$D" /tmp/"$NAME"
+mv -v /tmp/"$NAME" "$DIR"/
