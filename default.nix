@@ -1,6 +1,12 @@
 with builtins;
-with import <nixpkgs> {};
-with lib;
+with { pkgs = import <nixpkgs> {}; };
+with pkgs.lib;
+with pkgs.nix-helpers or (import (fetchgit {
+  url    = http://chriswarbo.net/git/nix-helpers.git;
+  rev    = "66f9a00";
+  sha256 = "0f84hyqslzb56gwc8yrrn8s95nvdfqn0hf6c9i3cng3bsz3yk53v";
+}));
+with pkgs;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
             trace "Calculating jobs for '${m}'" m;
