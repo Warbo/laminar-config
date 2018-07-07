@@ -1,7 +1,7 @@
 with builtins;
 with { pkgs = import <nixpkgs> {}; };
 with pkgs.lib;
-with pkgs.nix-helpers or (import (fetchgit {
+with pkgs.nix-helpers or (import (pkgs.fetchgit {
   url    = http://chriswarbo.net/git/nix-helpers.git;
   rev    = "66f9a00";
   sha256 = "0f84hyqslzb56gwc8yrrn8s95nvdfqn0hf6c9i3cng3bsz3yk53v";
