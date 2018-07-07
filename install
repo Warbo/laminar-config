@@ -8,7 +8,7 @@ D=$(nix-build --show-trace --no-out-link)
 if readlink -f /etc/nixos/configuration.nix | grep 'desktop-scripts' > /dev/null
 then
     echo "We're on desktop" 1>&2
-    LAMINAR_CFG=/var/lib/laminar/cfg
+    LAMINAR_CFG=/home/user/LaminarCfg
 else
     echo "We're on laptop" 1>&2
     LAMINAR_CFG=/home/chris/System/Laminar
