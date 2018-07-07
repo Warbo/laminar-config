@@ -11,6 +11,8 @@ with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
             trace "Calculating jobs for '${m}'" m;
 
+  repoSource = pkgs.repoSource or http://chriswarbo.net/git;
+
   lockScripts = name: {
     lock = wrap {
       name   = "lock-script-${name}";
