@@ -126,15 +126,18 @@ with rec {
       };
     };
 
-  jobs = attrsToDirs {
+  jobs = {
     jobs = fold mergeAttrs {} (attrValues (simpleNixRepos // laptopOverrides));
   };
 
   nodes = if machine == "laptop"
-             then attrsToDirs { nodes = {
-               "laptop.conf" = writeScript "laptop.conf" ''
-                 EXECUTORS=1
-               ''; }; }
+             then {
+                    nodes = {
+                      "laptop.conf" = writeScript "laptop.conf" ''
+                        EXECUTORS=1
+                      '';
+                    };
+                  }
              else {};
 };
-jobs // nodes
+attrsToDirs (jobs // nodes)
