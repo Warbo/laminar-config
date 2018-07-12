@@ -77,12 +77,24 @@ with rec {
       "${name}.run" = wrap {
         name   = "${name}.run";
         paths  = [ bash nix ];
-        vars   = withNix {};
+        vars   = withNix {
+          ATTRS   = ''(with builtins; concatStringsSep "\n"
+                        (attrNames (import (./. + "/${file}"))))'';
+          GETATTR = ''{ attr }: builtins.getAttr attr
+                                  (import (./. + "/${file}"))'';
+        };
         script = ''
           #!/usr/bin/env bash
           set -e
           cd "${name}"
-          nix-build --show-trace "${file}"
+          echo "Finding derivations" 1>&2
+          ATTRNAMES=$(nix eval --raw "$ATTRS")
+          echo "Building derivations" 1>&2
+          while read -r ATTR
+          do
+            echo "Building $ATTR" 1>&2
+            nix-build --show-trace --argstr attr "$ATTR" -E "$GETATTR"
+          done < <(echo "$ATTRNAMES")
         '';
       };
   };
