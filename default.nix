@@ -88,7 +88,7 @@ with rec {
           set -e
           cd "${name}"
           echo "Finding derivations" 1>&2
-          ATTRNAMES=$(nix eval --raw "$ATTRS")
+          ATTRNAMES=$(nix eval --show-trace --raw "$ATTRS")
           echo "Building derivations" 1>&2
           while read -r ATTR
           do
