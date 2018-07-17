@@ -1,11 +1,14 @@
 with builtins;
-with { pkgs = import <nixpkgs> {}; };
+with rec {
+  pkgs    = import <nixpkgs> {};
+  helpers = pkgs.fetchgit {
+    url    = http://chriswarbo.net/git/nix-helpers.git;
+    rev    = "8148130";
+    sha256 = "1yfl361il9bxg8982qk05x3dwfgy87q8dar01q46yg7nr9mi8nza";
+  };
+};
 with pkgs.lib;
-with pkgs.nix-helpers or (import (pkgs.fetchgit {
-  url    = http://chriswarbo.net/git/nix-helpers.git;
-  rev    = "66f9a00";
-  sha256 = "0f84hyqslzb56gwc8yrrn8s95nvdfqn0hf6c9i3cng3bsz3yk53v";
-}));
+with import helpers;
 with pkgs;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
@@ -78,23 +81,23 @@ with rec {
         name   = "${name}.run";
         paths  = [ bash nix ];
         vars   = withNix {
-          ATTRS   = ''(with builtins; concatStringsSep "\n"
-                        (attrNames (import (./. + "/${file}"))))'';
-          GETATTR = ''{ attr }: builtins.getAttr attr
-                                  (import (./. + "/${file}"))'';
+          ATTRS = ''(with import ${helpers};
+                     drvPathsIn (import (./. + "/${file}")))'';
         };
         script = ''
           #!/usr/bin/env bash
           set -e
           cd "${name}"
           echo "Finding derivations" 1>&2
-          ATTRNAMES=$(nix eval --show-trace --raw "$ATTRS")
+          DRVPATHS=$(nix eval --show-trace --raw "$ATTRS")
           echo "Building derivations" 1>&2
-          while read -r ATTR
+          while read -r PAIR
           do
+            ATTR=$(echo "$PAIR" | cut -f1)
+             DRV=$(echo "$PAIR" | cut -f2)
             echo "Building $ATTR" 1>&2
-            nix-build --show-trace --argstr attr "$ATTR" -E "$GETATTR"
-          done < <(echo "$ATTRNAMES")
+            nix-store --show-trace --realise "$DRV"
+          done < <(echo "$DRVPATHS")
         '';
       };
   };

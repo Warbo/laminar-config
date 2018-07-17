@@ -1,0 +1,31 @@
+From: Chris Warburton
+Date: Sat, 14 Jul 2018 12:04:10 +0100
+State: new
+Subject: Add benchmark jobs
+Message-Id: <feb344b8f8d120ee-0-artemis@nixos>
+
+Laminar and ASV look like a good fit in terms of data model, etc. since
+we can keep git clones in laminar's "workspace" directories, 'git pull'
+them in the '.before' script (which we're already doing for builds), do
+'asv run NEW' as our '.run' script and do 'asv publish', etc. in the
+'.after' script.
+
+Unfortunately there's a big problem: making sure that benchmarks aren't
+run concurrently with any other job. Laminar doesn't support this
+directly, although I've opened a github issue making a note of it
+(purely for documentation purposes; not expecting it to be implemented).
+
+The author suggested that as long as Laminar doesn't have this feature,
+we could try altering the Laminar node configuration from within a job.
+For example, we might have a 'foo-benchmark' job which does:
+
+    sed -e 's/EXECUTORS=[0-9]+/EXECUTORS=1/g' \
+        -i "$LAMINAR_HOME/cfg/nodes/desktop.conf"
+    laminarc queue foo-benchmark-runner
+
+Where 'foo-benchmark-runner' does the actual script running. I think
+this would work for ratcheting down the executors, but it's less clear
+how we'd increase them again. What if we just bump it back up in a
+'foo-benchmark-runner.after' script?
+
+I'll have to think about this a bit more...
