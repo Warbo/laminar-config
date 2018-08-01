@@ -80,7 +80,7 @@ with rec {
       # The main job script
       "${name}.run" = wrap {
         name   = "${name}.run";
-        paths  = [ bash nix ];
+        paths  = [ bash nix utillinux ];
         vars   = withNix {
           ATTRS = ''(with import ${helpers};
                      drvPathsIn (import (./. + "/${file}")))'';
@@ -137,7 +137,7 @@ with rec {
         "test-runner.before" = testLocks.lock;
         "test-runner.run"    = wrap {
           name   = "test-runner.run";
-          paths  = [ bash nix ];
+          paths  = [ bash nix utillinux ];
           vars   = withNix {};
           script = ''
             #!/usr/bin/env bash
