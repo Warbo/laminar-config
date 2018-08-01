@@ -57,8 +57,9 @@ with rec {
         '';
       };
 
-      # Pull any updates before we run the job. We protect this with a lock to
-      # avoid concurrent pulls
+      # Pull any updates before we run the job. We use a job-specific lock to
+      # avoid concurrent pulls of the same repo, and a node-specific lock to
+      # avoid running concurrently with a benchmarking job.
       "${name}.before" = wrap {
         name   = "${name}.before";
         paths  = [ bash git ];
@@ -83,34 +84,38 @@ with rec {
         vars   = withNix {
           ATTRS = ''(with import ${helpers};
                      drvPathsIn (import (./. + "/${file}")))'';
+          runner = writeScript "${name}-runner.sh" ''
+            #!/usr/bin/env bash
+            set -e
+            cd "${name}"
+            echo "Finding derivations" 1>&2
+            DRVPATHS=$(nix eval --show-trace --raw "$ATTRS")
+            echo "Building derivations" 1>&2
+            COUNT=0
+            FAILS=0
+            while read -r PAIR
+            do
+              COUNT=$(( COUNT + 1 ))
+              ATTR=$(echo "$PAIR" | cut -f1)
+               DRV=$(echo "$PAIR" | cut -f2)
+              echo "Building $ATTR" 1>&2
+              nix-store --show-trace --realise "$DRV" || FAILS=$(( FAILS + 1 ))
+            done < <(echo "$DRVPATHS")
+            if [[ "$FAILS" -eq 0 ]]
+            then
+              echo "All $COUNT built successfully" 1>&2
+            else
+              printf '%s/%s builds failed\n' "$FAILS" "$COUNT" 1>&2
+              exit 1
+            fi
+          '';
         };
         script = ''
-          #!/usr/bin/env bash
-          set -e
-          cd "${name}"
-          echo "Finding derivations" 1>&2
-          DRVPATHS=$(nix eval --show-trace --raw "$ATTRS")
-          echo "Building derivations" 1>&2
-          COUNT=0
-          FAILS=0
-          while read -r PAIR
-          do
-            COUNT=$(( COUNT + 1 ))
-            ATTR=$(echo "$PAIR" | cut -f1)
-             DRV=$(echo "$PAIR" | cut -f2)
-            echo "Building $ATTR" 1>&2
-            nix-store --show-trace --realise "$DRV" || FAILS=$(( FAILS + 1 ))
-          done < <(echo "$DRVPATHS")
-          if [[ "$FAILS" -eq 0 ]]
-          then
-            echo "All $COUNT built successfully" 1>&2
-          else
-            printf '%s/%s builds failed\n' "$FAILS" "$COUNT" 1>&2
-            exit 1
-          fi
+          mkdir -p "/tmp/benchmark-locks"
+          flock -s "/tmp/benchmark-locks/$NODE" -c "$runner"
         '';
       };
-  };
+    };
 
   # Projects which provide release.nix file defining their build products
   simpleNixRepos = genAttrs [
@@ -119,6 +124,9 @@ with rec {
     "nix-eval" "nix-helpers" "nix-lint" "panhandle" "panpipe"
     "theory-exploration-benchmarks" "warbo-packages" "warbo-utilities" "writing"
   ] (name: buildNixRepo { inherit name; });
+
+  # TODO: Add jobs for benchmarks, taking an exclusive lock using:
+  #   flock /some/path/$NODE -c /actual/script
 
   # Things which only make sense on laptop, e.g. using non-git resources
   laptopOverrides = if machine != "laptop" then {} else
@@ -133,7 +141,7 @@ with rec {
           vars   = withNix {};
           script = ''
             #!/usr/bin/env bash
-            exec /home/chris/System/Tests/run
+            flock -s "/tmp/benchmark-locks/$NODE" -c /home/chris/System/Tests/run
           '';
         };
       };
@@ -152,5 +160,28 @@ with rec {
                     };
                   }
              else {};
+
+  combined = attrsToDirs (jobs // nodes);
+
+  checks = {
+    everythingFlocked = runCommand "everything-flocked" { inherit combined; } ''
+      echo "Checking that everything uses flock" 1>&2
+      for J in "$combined/jobs"/*.run
+      do
+        # Delve into wrappers to find the real script
+        JOB="$J"
+        while grep '^exec .*extraFlagsArray' < "$JOB" > /dev/null
+        do
+          JOB=$(grep -o '^exec [^ ]*' < "$JOB" | head -n1 | cut -d ' ' -f2)
+        done
+
+        grep 'flock' < "$JOB" > /dev/null || {
+          echo "'$J' doesn't call flock, so may interfere with benchmarks" 1>&2
+          exit 1
+        }
+      done
+      mkdir "$out"
+    '';
+  };
 };
-attrsToDirs (jobs // nodes)
+withDeps (attrValues checks) combined
