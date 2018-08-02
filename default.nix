@@ -13,8 +13,8 @@ with rec {
   };
 };
 with pkgs.lib;
-with import helpers;
 with { inherit (import packages) asv-nix; };
+with import helpers;
 with pkgs;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
