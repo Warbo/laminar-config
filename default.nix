@@ -196,7 +196,7 @@ with rec {
 
             cd "benchmark-${name}"
             asv machine --yes
-            runBenchmarks
+            runBenchmarks NEW
           '';
         };
         script = ''
