@@ -191,6 +191,9 @@ with rec {
               fail "asv run failed, and it wasn't for lack of commits"
             }
 
+            export HOME="$WORKSPACE/home"
+            mkdir -p "$HOME"
+
             cd "benchmark-${name}"
             asv machine --yes
             runBenchmarks
