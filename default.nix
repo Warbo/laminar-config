@@ -159,7 +159,7 @@ with rec {
             function runBenchmarks {
               echo "Running asv on range $1" 1>&2
               TOO_FEW_MSG="unknown revision or path not in the working tree"
-              if O=$(asv run --show-stderr --machine dummy "$1" 2>&1 |
+              if O=$(asv run --show-stderr "$1" 2>&1 |
                      tee >(cat 1>&2))
               then
                 # Despite asv exiting successfully, we might have still hit a
