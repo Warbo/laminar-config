@@ -6,9 +6,15 @@ with rec {
     rev    = "8148130";
     sha256 = "1yfl361il9bxg8982qk05x3dwfgy87q8dar01q46yg7nr9mi8nza";
   };
+  packages = pkgs.fetchgit {
+    url    = http://chriswarbo.net/git/warbo-packages.git;
+    rev    = "57165a5";
+    sha256 = "1sgd595hf3jdz0hznkhzzw2nszdnkviwqxims7bzaf5sg5rm5pfi";
+  };
 };
 with pkgs.lib;
 with import helpers;
+with import packages;
 with pkgs;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
