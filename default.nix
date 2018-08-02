@@ -125,10 +125,7 @@ with rec {
           mkdir -p "/tmp/benchmark-locks"
           flock -s "/tmp/benchmark-locks/$NODE" -c "$runner"
           ${if elem name benchmarkRepos
-               then ''
-                 echo "Queueing benchmark run" 1>&2
-                 LAMINAR_REASON="Successful build" \
-                   laminarc queue benchmark-${name}''
+               then "laminarc queue 'benchmark-${name}'"
                else ""}
         '';
       };
