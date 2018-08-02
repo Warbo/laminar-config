@@ -119,11 +119,15 @@ with rec {
           '';
         };
         script = ''
+          #!/usr/bin/env bash
+          set -e
           mkdir -p "/tmp/benchmark-locks"
           flock -s "/tmp/benchmark-locks/$NODE" -c "$runner"
           ${if elem name benchmarkRepos
-               then ''LAMINAR_REASON=\"Successful build\" \
-                       laminarc queue benchmark-${name}''
+               then ''
+                 echo "Queueing benchmark run" 1>&2
+                 LAMINAR_REASON="Successful build" \
+                   laminarc queue benchmark-${name}''
                else ""}
         '';
       };
