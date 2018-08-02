@@ -3,13 +3,13 @@ with rec {
   pkgs    = import <nixpkgs> {};
   helpers = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/nix-helpers.git;
-    rev    = "8148130";
-    sha256 = "1yfl361il9bxg8982qk05x3dwfgy87q8dar01q46yg7nr9mi8nza";
+    rev    = "72d9d88";
+    sha256 = "1kggqr07dz2widv895wp8g1x314lqg19p67nzr3b97pg97amhjsi";
   };
   packages = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/warbo-packages.git;
-    rev    = "57165a5";
-    sha256 = "1sgd595hf3jdz0hznkhzzw2nszdnkviwqxims7bzaf5sg5rm5pfi";
+    rev    = "773c523";
+    sha256 = "0q89iczdj1gw2s4facpd23kh31w2xfvkdzcb0njwzg2d7pysmpni";
   };
 };
 with pkgs.lib;
