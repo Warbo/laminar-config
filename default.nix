@@ -14,7 +14,7 @@ with rec {
 };
 with pkgs.lib;
 with import helpers;
-with import packages;
+with { inherit (import packages) asv-nix; };
 with pkgs;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
