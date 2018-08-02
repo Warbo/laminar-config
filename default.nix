@@ -37,46 +37,48 @@ with rec {
     };
   };
 
+  gitScripts = { name, repo }: {
+    # Clones the required git repo to the "workspace" the first time this job
+    # is run
+    "${name}.init" = wrap {
+      name   = "${name}.init";
+      paths  = [ bash git ];
+      script = ''
+        #!/usr/bin/env bash
+        set -e
+        mkdir -p "$WORKSPACE"
+        git clone "${repo}" "$WORKSPACE/${name}"
+      '';
+    };
+
+    # Pull any updates before we run the job. We use a job-specific lock to
+    # avoid concurrent pulls of the same repo, and a node-specific lock to
+    # avoid running concurrently with a benchmarking job.
+    "${name}.before" = wrap {
+      name   = "${name}.before";
+      paths  = [ bash git ];
+      script = ''
+        #!/usr/bin/env bash
+        set -e
+        laminarc lock "${name}-git"
+        pushd "$WORKSPACE/${name}"
+          # We could parameterise this by revision in the future
+          git pull --all
+        popd
+        # Make a copy to avoid interference (use hardlinks for speed)
+        cp -al "$WORKSPACE/${name}" "${name}"
+        laminarc release "${name}-git"
+      '';
+    };
+  };
+
   # Sets up a job to build the given Nix file from the given git repo
   buildNixRepo =
     {
       name,
       file ? "release.nix",
       repo ? "${repoSource}/${name}.git"
-    }: {
-      # Clones the required git repo to the "workspace" the first time this job
-      # is run
-      "${name}.init" = wrap {
-        name   = "${name}.init";
-        paths  = [ bash git ];
-        script = ''
-          #!/usr/bin/env bash
-          set -e
-          mkdir -p "$WORKSPACE"
-          git clone "${repo}" "$WORKSPACE/${name}"
-        '';
-      };
-
-      # Pull any updates before we run the job. We use a job-specific lock to
-      # avoid concurrent pulls of the same repo, and a node-specific lock to
-      # avoid running concurrently with a benchmarking job.
-      "${name}.before" = wrap {
-        name   = "${name}.before";
-        paths  = [ bash git ];
-        script = ''
-          #!/usr/bin/env bash
-          set -e
-          laminarc lock "${name}-git"
-            pushd "$WORKSPACE/${name}"
-              # We could parameterise this by revision in the future
-              git pull --all
-            popd
-            # Make a copy to avoid interference (use hardlinks for speed)
-            cp -al "$WORKSPACE/${name}" "${name}"
-          laminarc release "${name}-git"
-        '';
-      };
-
+    }: gitScripts { inherit name repo; }  // {
       # The main job script
       "${name}.run" = wrap {
         name   = "${name}.run";
@@ -113,6 +115,10 @@ with rec {
         script = ''
           mkdir -p "/tmp/benchmark-locks"
           flock -s "/tmp/benchmark-locks/$NODE" -c "$runner"
+          ${if elem name benchmarkRepos
+               then ''LAMINAR_REASON=\"Successful build\" \
+                       laminarc queue benchmark-${name}''
+               else ""}
         '';
       };
     };
@@ -125,8 +131,80 @@ with rec {
     "theory-exploration-benchmarks" "warbo-packages" "warbo-utilities" "writing"
   ] (name: buildNixRepo { inherit name; });
 
-  # TODO: Add jobs for benchmarks, taking an exclusive lock using:
-  #   flock /some/path/$NODE -c /actual/script
+  buildBenchmarkRepo =
+    {
+      name,
+      repo ? "${repoSource}/${name}.git"
+    }:
+    gitScripts { inherit repo; name = "benchmark-${name}"; } // {
+      # The main job script, protected by flock to prevent concurrency
+      "benchmark-${name}.run" = wrap {
+        name   = "benchmark-${name}.run";
+        paths  = [ bash fail git (python.withPackages (p: [ asv-nix ]))
+                   utillinux ] ++ (withNix {}).buildInputs;
+        vars   = withNix {
+          GIT_SSL_CAINFO = "${cacert}/etc/ssl/certs/ca-bundle.crt";
+          runner = writeScript "${name}-runner.sh" ''
+            #!/usr/bin/env bash
+            set -e
+
+            function runBenchmarks {
+              echo "Running asv on range $1" 1>&2
+              TOO_FEW_MSG="unknown revision or path not in the working tree"
+              if O=$(asv run --show-stderr --machine dummy "$1" 2>&1 |
+                     tee >(cat 1>&2))
+              then
+                # Despite asv exiting successfully, we might have still hit a
+                # git rev-parse failure
+                echo "$O" | grep 'asv.util.ProcessError:' > /dev/null ||
+                  return 0
+                echo "Spotted ProcessError from asv run, investigating..." 1>&2
+
+                echo "$O" | grep "$TOO_FEW_MSG" > /dev/null ||
+                  fail "Don't know how to handle this error, aborting"
+                echo "We asked for too many commits, going to retry" 1>&2
+              fi
+
+              # Handle failures based on their error messages: some are benign
+              if echo "$O" | grep 'No commit hashes selected' > /dev/null
+              then
+                # This happens when everything's already in the cache
+                echo "No commits needed benchmarking, so asv run bailed out" 1>&2
+              fi
+              if echo "$O" | grep "$TOO_FEW_MSG" > /dev/null
+              then
+                echo "Asked to benchmark '$commitCount' commits, but" 1>&2
+                echo "there aren't that many on the branch. Retrying" 2>&2
+                echo "without limit."                                 1>&2
+                runBenchmarks "HEAD" || fail "Retry attempt failed"
+                return 0
+              fi
+
+              fail "asv run failed, and it wasn't for lack of commits"
+            }
+
+            cd "benchmark-${name}"
+            runBenchmarks
+          '';
+        };
+        script = ''
+          # Take an exclusive lock for the duration of the benchmark
+          mkdir -p "/tmp/benchmark-locks"
+          flock    "/tmp/benchmark-locks/$NODE" -c "$runner"
+        '';
+      };
+    };
+
+  # Projects which provide an asv.conf.json file defining a benchmark suite
+  # We handle these separately to normal builds since they should never run
+  # concurrently with any other job, since that would interfere with timings.
+  benchmarkRepos    = [ "bucketing-algorithms" ];
+  benchmarkRepoJobs = fold
+    (name: rest: rest // {
+      "benchmark-${name}" = buildBenchmarkRepo { inherit name; };
+    })
+    {}
+    benchmarkRepos;
 
   # Things which only make sense on laptop, e.g. using non-git resources
   laptopOverrides = if machine != "laptop" then {} else
@@ -137,7 +215,7 @@ with rec {
         "test-runner.before" = testLocks.lock;
         "test-runner.run"    = wrap {
           name   = "test-runner.run";
-          paths  = [ bash nix utillinux ];
+          paths  = [ bash utillinux ] ++ (withNix {}).buildInputs;
           vars   = withNix {};
           script = ''
             #!/usr/bin/env bash
@@ -148,7 +226,8 @@ with rec {
     };
 
   jobs = {
-    jobs = fold mergeAttrs {} (attrValues (simpleNixRepos // laptopOverrides));
+    jobs = fold mergeAttrs {}
+      (attrValues (simpleNixRepos // benchmarkRepoJobs // laptopOverrides));
   };
 
   nodes = if machine == "laptop"
