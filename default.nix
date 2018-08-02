@@ -12,10 +12,11 @@ with rec {
     sha256 = "0q89iczdj1gw2s4facpd23kh31w2xfvkdzcb0njwzg2d7pysmpni";
   };
 };
-with pkgs.lib;
-with { inherit (import packages) asv-nix; };
-with import helpers;
-with pkgs;
+with import <nixpkgs> {
+  overlays = [ (import  "${helpers}/overlay.nix")
+               (import "${packages}/overlay.nix") ];
+};
+with lib;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
             trace "Calculating jobs for '${m}'" m;
