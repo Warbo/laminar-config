@@ -157,69 +157,30 @@ with rec {
     gitScripts { inherit repo; name = "benchmark-${name}"; } // {
       # The main job script, protected by flock to prevent concurrency
       "benchmark-${name}.run" = wrap {
-        name   = "benchmark-${name}.run";
-        paths  = [ bash fail git (python.withPackages (p: [ asv-nix ]))
-                   utillinux ] ++ (withNix {}).buildInputs;
-        vars   = withNix {
-          GIT_SSL_CAINFO = "${cacert}/etc/ssl/certs/ca-bundle.crt";
-          runner = writeScript "${name}-runner.sh" ''
-            #!/usr/bin/env bash
-            set -e
-
-            function runBenchmarks {
-              echo "Running asv on range $1" 1>&2
-              TOO_FEW_MSG="unknown revision or path not in the working tree"
-              if O=$(asv run --show-stderr "$1" 2>&1 |
-                     tee >(cat 1>&2))
-              then
-                # Despite asv exiting successfully, we might have still hit a
-                # git rev-parse failure
-                echo "$O" | grep 'asv.util.ProcessError:' > /dev/null ||
-                  return 0
-                echo "Spotted ProcessError from asv run, investigating..." 1>&2
-
-                echo "$O" | grep "$TOO_FEW_MSG" > /dev/null ||
-                  fail "Don't know how to handle this error, aborting"
-                echo "We asked for too many commits, going to retry" 1>&2
-              fi
-
-              # Handle failures based on their error messages: some are benign
-              if echo "$O" | grep 'No commit hashes selected' > /dev/null
-              then
-                # This happens when everything's already in the cache
-                echo "No commits needed benchmarking, so asv run bailed out" 1>&2
-              fi
-              if echo "$O" | grep "$TOO_FEW_MSG" > /dev/null
-              then
-                echo "Asked to benchmark '$commitCount' commits, but" 1>&2
-                echo "there aren't that many on the branch. Retrying" 2>&2
-                echo "without limit."                                 1>&2
-                runBenchmarks "HEAD" || fail "Retry attempt failed"
-                return 0
-              fi
-
-              fail "asv run failed, and it wasn't for lack of commits"
-            }
-
-            export HOME="$WORKSPACE/home"
-            mkdir -p "$HOME"
-
-            cd "benchmark-${name}"
-            asv machine --yes
-            runBenchmarks NEW
-
-            echo "Generating HTML" 1>&2
-            asv publish
-
-            cp -r "${results}" "$ARCHIVE/results"
-            cp -r "${html}"    "$ARCHIVE/html"
-          '';
+        name  = "benchmark-${name}.run";
+        paths = [ bash utillinux ];
+        vars  = {
+          BENCHMARK_IN_PLACE = "1";  # Don't copy, cache, etc.
+          runner = import "${benchmark-runner}/runner.nix" configuredPkgs;
         };
         script = ''
+          #!/usr/bin/env bash
+          set -e
+          echo "Setting up" 1>&2
+          export HOME="$PWD/home"
+          mkdir -p "$HOME"
+
+          export dir="$WORKSPACE/benchmark-${name}"
+          cd "$dir"
+
           LOCKFILE="/tmp/benchmark-locks/$NODE"
           echo "Waiting for exclusive lock on $LOCKFILE" 1>&2
           mkdir -p "$(dirname "$LOCKFILE")"
           flock    "$LOCKFILE" -c "$runner"
+
+          echo "Storing results" 1>&2
+          cp -r "${results}" "$ARCHIVE/results"
+          cp -r "${html}"    "$ARCHIVE/html"
         '';
       };
     };
