@@ -220,7 +220,7 @@ with rec {
   extra =
     with {
       attrsToKeyVal = s: concatStringsSep "\n"
-                           (mapAttrsToList (concatStringsSep "=") s);
+                           (mapAttrsToList (k: v: "${k}=${v}") s);
     };
     if machine == "laptop"
        then {
