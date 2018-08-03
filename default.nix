@@ -11,11 +11,12 @@ with rec {
     rev    = "773c523";
     sha256 = "0q89iczdj1gw2s4facpd23kh31w2xfvkdzcb0njwzg2d7pysmpni";
   };
+  configuredPkgs = import <nixpkgs> {
+    overlays = [ (import  "${helpers}/overlay.nix")
+                 (import "${packages}/overlay.nix") ];
+  };
 };
-with import <nixpkgs> {
-  overlays = [ (import  "${helpers}/overlay.nix")
-               (import "${packages}/overlay.nix") ];
-};
+with configuredPkgs;
 with lib;
 with rec {
   machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
