@@ -15,6 +15,11 @@ with rec {
     overlays = [ (import  "${helpers}/overlay.nix")
                  (import "${packages}/overlay.nix") ];
   };
+  benchmark-runner = pkgs.fetchgit {
+    url    = http://chriswarbo.net/git/benchmark-runner.git;
+    rev    = "cce210d";
+    sha256 = "153pwms8pkk573zj9a9nasksw12camvkw6pjqn29f91xvwwsbzh7";
+  };
 };
 with configuredPkgs;
 with lib;
