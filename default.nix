@@ -158,7 +158,7 @@ with rec {
       # The main job script, protected by flock to prevent concurrency
       "benchmark-${name}.run" = wrap {
         name  = "benchmark-${name}.run";
-        paths = [ bash lzip utillinux ];
+        paths = [ bash gnutar lzip utillinux ];
         vars  = {
           BENCHMARK_IN_PLACE = "1";  # Don't copy, cache, etc.
           runner = import "${benchmark-runner}/runner.nix" configuredPkgs;
