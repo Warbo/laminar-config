@@ -122,8 +122,10 @@ with rec {
         script = ''
           #!/usr/bin/env bash
           set -e
-          mkdir -p "/tmp/benchmark-locks"
-          flock -s "/tmp/benchmark-locks/$NODE" -c "$runner"
+          LOCKFILE="/tmp/benchmark-locks/$NODE"
+          echo "Waiting for read lock on $LOCKFILE" 1>&2
+          mkdir -p "$(dirname "$LOCKFILE")"
+          flock -s "$LOCKFILE" -c "$runner"
           ${if elem name benchmarkRepos
                then "laminarc queue 'benchmark-${name}'"
                else ""}
@@ -200,9 +202,10 @@ with rec {
           '';
         };
         script = ''
-          # Take an exclusive lock for the duration of the benchmark
-          mkdir -p "/tmp/benchmark-locks"
-          flock    "/tmp/benchmark-locks/$NODE" -c "$runner"
+          LOCKFILE="/tmp/benchmark-locks/$NODE"
+          echo "Waiting for exclusive lock on $LOCKFILE" 1>&2
+          mkdir -p "$(dirname "$LOCKFILE")"
+          flock    "$LOCKFILE" -c "$runner"
         '';
       };
     };
