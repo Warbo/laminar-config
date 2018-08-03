@@ -1,0 +1,9 @@
+From: Chris Warburton
+Date: Fri, 03 Aug 2018 17:05:45 +0100
+Subject: Re: Add benchmark jobs
+Message-Id: <feb344b8f8d120ee-96a6a287289ad12c-artemis@nixos>
+References: <feb344b8f8d120ee-0-artemis@nixos>
+In-Reply-To: <feb344b8f8d120ee-0-artemis@nixos>
+
+After some discussions, it looks like the 'flock' command can do what we
+need, so I've used it.

@@ -1,8 +1,9 @@
 From: Chris Warburton
 Date: Sat, 14 Jul 2018 12:04:10 +0100
-State: new
+State: resolved
 Subject: Add benchmark jobs
 Message-Id: <feb344b8f8d120ee-0-artemis@nixos>
+resolution: fixed
 
 Laminar and ASV look like a good fit in terms of data model, etc. since
 we can keep git clones in laminar's "workspace" directories, 'git pull'

@@ -1,8 +1,9 @@
 From: Chris Warburton
 Date: Fri, 03 Aug 2018 16:52:37 +0100
-State: new
+State: resolved
 Subject: Specify BENCHMARK_LOCK in an 'env' file
 Message-Id: <f53135da45c0fa46-0-artemis@nixos>
+resolution: fixed
 
 As per https://laminar.ohwg.net/docs.html#Reference
 

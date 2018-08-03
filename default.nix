@@ -128,10 +128,8 @@ with rec {
         script = ''
           #!/usr/bin/env bash
           set -e
-          LOCKFILE="/tmp/benchmark-locks/$NODE"
-          echo "Waiting for read lock on $LOCKFILE" 1>&2
-          mkdir -p "$(dirname "$LOCKFILE")"
-          flock -s "$LOCKFILE" -c "$runner"
+          echo "Waiting for read lock on $BENCHMARK_LOCK" 1>&2
+          flock -s "$BENCHMARK_LOCK" -c "$runner"
           ${if elem name benchmarkRepos
                then "laminarc queue 'benchmark-${name}'"
                else ""}
@@ -173,10 +171,8 @@ with rec {
           export dir="$WORKSPACE/benchmark-${name}"
           cd "$dir"
 
-          LOCKFILE="/tmp/benchmark-locks/$NODE"
-          echo "Waiting for exclusive lock on $LOCKFILE" 1>&2
-          mkdir -p "$(dirname "$LOCKFILE")"
-          flock    "$LOCKFILE" -c "$runner"
+          echo "Waiting for exclusive lock on $BENCHMARK_LOCK" 1>&2
+          flock "$BENCHMARK_LOCK" -c "$runner"
 
           echo "Storing results" 1>&2
           tar cf "$ARCHIVE/results.tar.lz" --lzip "${results}"
@@ -188,7 +184,8 @@ with rec {
   # Projects which provide an asv.conf.json file defining a benchmark suite
   # We handle these separately to normal builds since they should never run
   # concurrently with any other job, since that would interfere with timings.
-  benchmarkRepos    = [ "bucketing-algorithms" "haskell-te" "isaplanner-tip" "theory-exploration-benchmarks" ];
+  benchmarkRepos    = [ "bucketing-algorithms" "haskell-te" "isaplanner-tip"
+                        "theory-exploration-benchmarks" ];
   benchmarkRepoJobs = fold
     (name: rest: rest // {
       "benchmark-${name}" = buildBenchmarkRepo { inherit name; };
@@ -209,7 +206,7 @@ with rec {
           vars   = withNix {};
           script = ''
             #!/usr/bin/env bash
-            flock -s "/tmp/benchmark-locks/$NODE" -c /home/chris/System/Tests/run
+            flock -s "$BENCHMARK_LOCK" -c /home/chris/System/Tests/run
           '';
         };
       };
@@ -220,17 +217,26 @@ with rec {
       (attrValues (simpleNixRepos // benchmarkRepoJobs // laptopOverrides));
   };
 
-  nodes = if machine == "laptop"
-             then {
-                    nodes = {
-                      "laptop.conf" = writeScript "laptop.conf" ''
-                        EXECUTORS=1
-                      '';
-                    };
-                  }
-             else {};
+  extra =
+    with {
+      attrsToKeyVal = s: concatStringsSep "\n"
+                           (mapAttrsToList (concatStringsSep "=") x);
+    };
+    if machine == "laptop"
+       then {
+         nodes = {
+           "laptop.conf" = writeScript "laptop.conf" ''
+             EXECUTORS=1
+           '';
+         };
+       }
+       else {
+         env = writeScript "env" (attrsToKeyVal {
+           BENCHMARK_LOCK = "/tmp/benchmark-lock";
+         });
+       };
 
-  combined = attrsToDirs (jobs // nodes);
+  combined = attrsToDirs (jobs // extra);
 
   checks = {
     everythingFlocked = runCommand "everything-flocked" { inherit combined; } ''
