@@ -199,6 +199,9 @@ with rec {
             cd "benchmark-${name}"
             asv machine --yes
             runBenchmarks NEW
+
+            echo "Generating HTML" 1>&2
+            asv publish
           '';
         };
         script = ''
