@@ -144,7 +144,9 @@ with rec {
   buildBenchmarkRepo =
     {
       name,
-      repo ? "${repoSource}/${name}.git"
+      repo    ? "${repoSource}/${name}.git",
+      html    ? ".asv/html",    # Relative path to results of 'asv publish'
+      results ? ".asv/results"  # Relative path to results os 'asv run'
     }:
     gitScripts { inherit repo; name = "benchmark-${name}"; } // {
       # The main job script, protected by flock to prevent concurrency
@@ -202,6 +204,9 @@ with rec {
 
             echo "Generating HTML" 1>&2
             asv publish
+
+            cp -r "${results}" "$ARCHIVE/results"
+            cp -r "${html}"    "$ARCHIVE/html"
           '';
         };
         script = ''
