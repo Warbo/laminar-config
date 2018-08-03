@@ -179,8 +179,8 @@ with rec {
           flock    "$LOCKFILE" -c "$runner"
 
           echo "Storing results" 1>&2
-          cp -r "${results}" "$ARCHIVE/results"
-          cp -r "${html}"    "$ARCHIVE/html"
+          tar cf "$ARCHIVE/results.tar.lz" --lzip "${results}"
+          tar cf "$ARCHIVE/html.tar.lz"    --lzip "${html}"
         '';
       };
     };
