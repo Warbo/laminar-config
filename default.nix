@@ -17,8 +17,8 @@ with rec {
   };
   benchmark-runner = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/benchmark-runner.git;
-    rev    = "cce210d";
-    sha256 = "153pwms8pkk573zj9a9nasksw12camvkw6pjqn29f91xvwwsbzh7";
+    rev    = "4113681";
+    sha256 = "077mn2krrzfnfh30qsg4kyy4x0ahsyqqhsx5nqan0v9nx78pmpzq";
   };
 };
 with configuredPkgs;
