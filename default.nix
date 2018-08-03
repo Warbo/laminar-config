@@ -148,9 +148,8 @@ with rec {
   buildBenchmarkRepo =
     {
       name,
-      repo    ? "${repoSource}/${name}.git",
-      html    ? ".asv/html",    # Relative path to results of 'asv publish'
-      results ? ".asv/results"  # Relative path to results os 'asv run'
+      repo     ? "${repoSource}/${name}.git",
+      asv-path ? ".asv"  # Relative path to results of asv
     }:
     gitScripts { inherit repo; name = "benchmark-${name}"; } // {
       # The main job script, protected by flock to prevent concurrency
@@ -175,8 +174,9 @@ with rec {
           flock "$BENCHMARK_LOCK" -c "$runner"
 
           echo "Storing results" 1>&2
-          tar cf "$ARCHIVE/results.tar.lz" --lzip "${results}"
-          tar cf "$ARCHIVE/html.tar.lz"    --lzip "${html}"
+          cd "${asv-path}"
+          tar cf "$ARCHIVE/results.tar.lz" --lzip results
+          tar cf "$ARCHIVE/html.tar.lz"    --lzip html
         '';
       };
     };
