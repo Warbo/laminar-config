@@ -74,13 +74,18 @@ with rec {
         #!/usr/bin/env bash
         set -e
         laminarc lock "${name}-git"
+
+        function cleanup {
+          laminarc release "${name}-git"
+        }
+        trap cleanup EXIT
+
         pushd "$WORKSPACE/${name}"
           # We could parameterise this by revision in the future
           git pull --all
         popd
         # Make a copy to avoid interference (use hardlinks for speed)
         cp -al "$WORKSPACE/${name}" "${name}"
-        laminarc release "${name}-git"
       '';
     };
   };
