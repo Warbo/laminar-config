@@ -144,9 +144,9 @@ with rec {
 
   # Projects which provide release.nix file defining their build products
   simpleNixRepos = genAttrs [
-    "benchmark-runner" "bucketing-algorithms" "chriswarbo-net" "general-tests"
-    "haskell-te" "isaplanner-tip" "ml4pg" "music-scripts" "nix-config"
-    "nix-eval" "nix-helpers" "nix-lint" "panhandle" "panpipe"
+    "asv-nix" "benchmark-runner" "bucketing-algorithms" "chriswarbo-net"
+    "general-tests" "haskell-te" "isaplanner-tip" "ml4pg" "music-scripts"
+    "nix-config" "nix-eval" "nix-helpers" "nix-lint" "panhandle" "panpipe"
     "theory-exploration-benchmarks" "warbo-packages" "warbo-utilities" "writing"
   ] (name: buildNixRepo { inherit name; });
 
