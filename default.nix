@@ -189,8 +189,8 @@ with rec {
   # Projects which provide an asv.conf.json file defining a benchmark suite
   # We handle these separately to normal builds since they should never run
   # concurrently with any other job, since that would interfere with timings.
-  benchmarkRepos    = [ "bucketing-algorithms" "haskell-te" "isaplanner-tip"
-                        "theory-exploration-benchmarks" ];
+  benchmarkRepos    = [ "bucketing-algorithms" "chriswarbo-net" "haskell-te"
+                        "isaplanner-tip" "theory-exploration-benchmarks" ];
   benchmarkRepoJobs = fold
     (name: rest: rest // {
       "benchmark-${name}" = buildBenchmarkRepo { inherit name; };
