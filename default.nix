@@ -229,20 +229,22 @@ with rec {
     with {
       attrsToKeyVal = s: concatStringsSep "\n"
                            (mapAttrsToList (k: v: "${k}=${v}") s);
+
+      perMachine = if machine == "laptop"
+                      then {
+                        nodes = {
+                          "laptop.conf" = writeScript "laptop.conf" ''
+                            EXECUTORS=1
+                          '';
+                        };
+                      }
+                      else {};
     };
-    if machine == "laptop"
-       then {
-         nodes = {
-           "laptop.conf" = writeScript "laptop.conf" ''
-             EXECUTORS=1
-           '';
-         };
-       }
-       else {
-         env = writeScript "env" (attrsToKeyVal {
-           BENCHMARK_LOCK = "/tmp/benchmark-lock";
-         });
-       };
+    perMachine // {
+      env = writeScript "env" (attrsToKeyVal {
+                                BENCHMARK_LOCK = "/tmp/benchmark-lock";
+                              });
+    };
 
   combined = attrsToDirs (jobs // extra);
 
