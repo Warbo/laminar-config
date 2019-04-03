@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
 set -e
-# Create cfg for Laminar
-D=$(nix-build --show-trace --no-out-link)
 
-# Desktop and laptop have the same hostname... Use the location of nixos config
-# to distinguish between them
-if readlink -f /etc/nixos/configuration.nix | grep 'desktop-scripts' > /dev/null
-then
-    echo "We're on desktop" 1>&2
-    LAMINAR_CFG=/home/user/LaminarCfg
-else
-    echo "We're on laptop" 1>&2
-    LAMINAR_CFG=/home/chris/System/Laminar
-fi
-echo "Laminar cfg location: $LAMINAR_CFG" 1>&2
+LAMINAR_CFG=/home/chris/System/Laminar
+
+# Create cfg for Laminar. We want this to survive garbage collection, so we keep
+# the 'result' symlink as a GC root.
+D=$(nix-build --show-trace -o "$(dirname "$0")/result")
 
 # Atomically replace the cfg symlink to point to "$D" by creating a symlink with
 # the same name in /tmp then moving it into the parent directory. This avoids

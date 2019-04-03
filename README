@@ -14,3 +14,26 @@ The `default.nix` file defines the job directory package. Build it using e.g.
 `nix-build`.
 
 The `install` script builds the job directory and points Laminar at the result.
+
+## Garbage Collection ##
+
+We can free up space by performing garbage collection on the Nix store, which
+deletes paths that aren't 'live' (in use) anymore. Usually, paths are live if
+they are installed on the system (or are a dependency of some installed
+package). We don't use Nix to install our Laminar configuration, since doing so
+would treat a config update like an OS update, which drags in too many other
+concerns for our purposes. Hence we can't rely on this to keep our config
+directory live.
+
+Instead, the `nix-build` command automatically creates a symlink called `result`
+in the current directory. This is a 'garbage collector root', whose presence
+tells Nix that the Laminar directory is live. If this symlink is deleted or
+renamed, the config directory will no longer be seen as live, and may be deleted
+when running the garbage collector. Building a new config directory will
+overwrite the `result` symlink, which makes the old directory not live anymore.
+
+Note that installing a new Laminar config is not an atomic operation, it
+consists of two atomic steps: building the new config, which also overwrites the
+`result` symlink; then moving the new config into place. In between these steps
+Laminar will be running a config that is no longer live, hence running the
+garbage collector may delete it. This should hopefully not cause any problems.
