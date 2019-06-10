@@ -3,13 +3,13 @@ with rec {
   pkgs    = import <nixpkgs> {};
   helpers = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/nix-helpers.git;
-    rev    = "72d9d88";
-    sha256 = "1kggqr07dz2widv895wp8g1x314lqg19p67nzr3b97pg97amhjsi";
+    rev    = "027e227";
+    sha256 = "11niics6rq60zaicb6spkfpvp8nv3wszdfgpqnrml946p1bggy13";
   };
   packages = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/warbo-packages.git;
-    rev    = "773c523";
-    sha256 = "0q89iczdj1gw2s4facpd23kh31w2xfvkdzcb0njwzg2d7pysmpni";
+    rev    = "c7f83b8";
+    sha256 = "1cx2w518sxr4933dr548ichaljhcp0wvmbgyv3m56lmfk6fqdgzq";
   };
   configuredPkgs = import <nixpkgs> {
     overlays = [ (import  "${helpers}/overlay.nix")
@@ -17,8 +17,8 @@ with rec {
   };
   benchmark-runner = pkgs.fetchgit {
     url    = http://chriswarbo.net/git/benchmark-runner.git;
-    rev    = "ec745ec";
-    sha256 = "0rp738mzpwy3q8s33gaqskpddczfim1xm77vxailvqjyn73ynkd4";
+    rev    = "ab48c19";
+    sha256 = "0fwwsbjg8rifnc8wx7avlav6mcskqp1bjm208zcr8909r0px00mw";
   };
 };
 with configuredPkgs;
