@@ -118,8 +118,10 @@ with rec {
               COUNT=$(( COUNT + 1 ))
               ATTR=$(echo "$PAIR" | cut -f1)
                DRV=$(echo "$PAIR" | cut -f2)
+              mkdir -p ../gcroots
               echo "Building $ATTR" 1>&2
-              nix-store --show-trace --realise "$DRV" || FAILS=$(( FAILS + 1 ))
+              nix-store --show-trace --indirect --add-root ../gcroots/"$ATTR" \
+                --realise "$DRV" || FAILS=$(( FAILS + 1 ))
             done < <(echo "$DRVPATHS")
             if [[ "$FAILS" -eq 0 ]]
             then
