@@ -1,0 +1,10 @@
+From: Chris Warburton
+Date: Sun, 09 Jun 2019 21:31:25 +0100
+State: new
+Subject: Use nix_release
+Message-Id: <dfaefca37a16d503-0-artemis@nixos>
+
+The derivation finding and building script has been factored out of here
+and into the nix_release and nix_release_eval scripts in nix-helpers.
+
+We should use those here now.
