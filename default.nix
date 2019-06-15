@@ -224,7 +224,7 @@ with rec {
 
   jobs = {
     jobs = fold mergeAttrs {}
-      (attrValues (simpleNixRepos // benchmarkRepoJobs // laptopOverrides));
+      (attrValues (simpleNixRepos // /*benchmarkRepoJobs //*/ laptopOverrides));
   };
 
   extra =
