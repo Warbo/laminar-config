@@ -24,9 +24,6 @@ with rec {
 with configuredPkgs;
 with lib;
 with rec {
-  machine = with { m = if pathExists /home/user then "desktop" else "laptop"; };
-            trace "Calculating jobs for '${m}'" m;
-
   repoSource = pkgs.repoSource or http://chriswarbo.net/git;
 
   lockScripts = name: {
@@ -204,7 +201,7 @@ with rec {
     benchmarkRepos;
 
   # Things which only make sense on laptop, e.g. using non-git resources
-  laptopOverrides = if machine != "laptop" then {} else
+  laptopOverrides =
     with { testLocks = lockScripts "test-runner"; };
     {
       test-runner = {
@@ -232,15 +229,13 @@ with rec {
       attrsToKeyVal = s: concatStringsSep "\n"
                            (mapAttrsToList (k: v: "${k}=${v}") s);
 
-      perMachine = if machine == "laptop"
-                      then {
-                        nodes = {
-                          "laptop.conf" = writeScript "laptop.conf" ''
-                            EXECUTORS=1
-                          '';
-                        };
-                      }
-                      else {};
+      perMachine = {
+        nodes = {
+          "laptop.conf" = writeScript "laptop.conf" ''
+            EXECUTORS=1
+          '';
+        };
+      };
     };
     perMachine // {
       env = writeScript "env" (attrsToKeyVal {
