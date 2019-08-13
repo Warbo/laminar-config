@@ -228,19 +228,16 @@ with rec {
     with {
       attrsToKeyVal = s: concatStringsSep "\n"
                            (mapAttrsToList (k: v: "${k}=${v}") s);
-
-      perMachine = {
-        nodes = {
-          "laptop.conf" = writeScript "laptop.conf" ''
-            EXECUTORS=1
-          '';
-        };
-      };
     };
-    perMachine // {
+    {
       env = writeScript "env" (attrsToKeyVal {
                                 BENCHMARK_LOCK = "/tmp/benchmark-lock";
                               });
+      nodes = {
+        "laptop.conf" = writeScript "laptop.conf" ''
+          EXECUTORS=1
+        '';
+      };
     };
 
   combined = attrsToDirs (jobs // extra);
