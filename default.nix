@@ -146,8 +146,8 @@ with rec {
     "asv-nix" "benchmark-runner" "bucketing-algorithms" "chriswarbo-net"
     "general-tests" "haskell-te" "isaplanner-tip" "ml4hsfe" "ml4pg"
     "music-scripts" "nix-config" "nix-eval" "nix-helpers" "nix-lint" "panhandle"
-    "panpipe" "theory-exploration-benchmarks" "warbo-packages" "warbo-utilities"
-    "writing"
+    "panpipe" "quickspeccer" "theory-exploration-benchmarks" "warbo-packages"
+    "warbo-utilities" "writing"
   ] (name: buildNixRepo { inherit name; });
 
   buildBenchmarkRepo =
@@ -191,7 +191,7 @@ with rec {
   # concurrently with any other job, since that would interfere with timings.
   benchmarkRepos    = [
     "bucketing-algorithms" "chriswarbo-net" "haskell-te" "isaplanner-tip"
-    "ml4hsfe" "theory-exploration-benchmarks"
+    "ml4hsfe" "quickspeccer" "theory-exploration-benchmarks"
   ];
   benchmarkRepoJobs = fold
     (name: rest: rest // {
