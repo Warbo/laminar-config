@@ -1,0 +1,22 @@
+# Repos to build (each should have a release.nix)
+asv-nix
+benchmark-runner
+bucketing-algorithms
+chriswarbo-net
+general-tests
+haskell-te
+isaplanner-tip
+ml4hsfe
+ml4pg
+music-scripts
+nix-config
+nix-eval
+nix-helpers
+nix-lint
+panhandle
+panpipe
+quickspeccer
+theory-exploration-benchmarks
+warbo-packages
+warbo-utilities
+writing

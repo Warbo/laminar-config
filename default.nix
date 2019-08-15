@@ -141,14 +141,14 @@ with rec {
       };
     };
 
+  fromFile = f: filter (r: r != "" && !(hasPrefix "#" r))
+                       (map (replaceStrings [" "] [""])
+                            (splitString "\n"
+                                         (readFile f)));
+
   # Projects which provide release.nix file defining their build products
-  simpleNixRepos = genAttrs [
-    "asv-nix" "benchmark-runner" "bucketing-algorithms" "chriswarbo-net"
-    "general-tests" "haskell-te" "isaplanner-tip" "ml4hsfe" "ml4pg"
-    "music-scripts" "nix-config" "nix-eval" "nix-helpers" "nix-lint" "panhandle"
-    "panpipe" "quickspeccer" "theory-exploration-benchmarks" "warbo-packages"
-    "warbo-utilities" "writing"
-  ] (name: buildNixRepo { inherit name; });
+  simpleNixRepos = genAttrs (fromFile ./repos)
+                            (name: buildNixRepo { inherit name; });
 
   buildBenchmarkRepo =
     {
@@ -189,10 +189,7 @@ with rec {
   # Projects which provide an asv.conf.json file defining a benchmark suite
   # We handle these separately to normal builds since they should never run
   # concurrently with any other job, since that would interfere with timings.
-  benchmarkRepos    = [
-    "bucketing-algorithms" "chriswarbo-net" "haskell-te" "isaplanner-tip"
-    "ml4hsfe" "quickspeccer" "theory-exploration-benchmarks"
-  ];
+  benchmarkRepos    = fromFile ./benchmark;
   benchmarkRepoJobs = fold
     (name: rest: rest // {
       "benchmark-${name}" = buildBenchmarkRepo { inherit name; };

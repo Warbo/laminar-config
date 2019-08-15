@@ -1,0 +1,8 @@
+# Repos to benchmark (should have asv.conf.json)
+bucketing-algorithms
+chriswarbo-net
+haskell-te
+isaplanner-tip
+ml4hsfe
+quickspeccer
+theory-exploration-benchmarks
